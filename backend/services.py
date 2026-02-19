@@ -278,3 +278,99 @@ def calculate_net_worth(assets):
         "leverage_ratio": leverage_ratio,
         "details": details
     }
+
+from sqlalchemy.orm import Session
+from .models import Transaction, Asset
+from collections import defaultdict
+from typing import Dict, Any
+
+def update_assets_from_history(db: Session):
+    """
+    Replays all transactions to calculate current asset holdings and updates the Assets table.
+    """
+    try:
+        # 1. Fetch all transactions ordered by date
+        transactions = db.query(Transaction).order_by(Transaction.date, Transaction.id).all()
+        logger.info(f"Fetched {len(transactions)} transactions for asset update.")
+
+        # 2. Calculate holdings
+        # structure: symbol -> {quantity: float, cost: float, type: str}
+        holdings: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"quantity": 0.0, "cost": 0.0, "type": "Stock"})
+
+        for txn in transactions:
+            symbol = txn.symbol
+            action = txn.action.upper()
+            price = txn.price
+            qty = txn.quantity
+            
+            # Initialize type if new
+            if holdings[symbol]["quantity"] == 0:
+                holdings[symbol]["type"] = txn.asset_type
+
+            current_qty = holdings[symbol]["quantity"]
+            current_avg_cost = holdings[symbol]["cost"]
+
+            if action in ["BUY", "BUY_OPEN"]:
+                # Weighted Average Cost
+                total_cost = (current_qty * current_avg_cost) + (qty * price)
+                new_qty = current_qty + qty
+                new_avg_cost = total_cost / new_qty if new_qty > 0 else 0.0
+                
+                holdings[symbol]["quantity"] = new_qty
+                holdings[symbol]["cost"] = new_avg_cost
+                
+            elif action in ["SELL", "SELL_CLOSE"]:
+                # Selling reduces quantity but doesn't change average cost per unit
+                new_qty = current_qty - qty
+                holdings[symbol]["quantity"] = new_qty
+                # Cost remains the same (Average Cost method) unless qty goes to 0
+                if new_qty <= 0:
+                    holdings[symbol]["quantity"] = 0.0
+                    holdings[symbol]["cost"] = 0.0
+
+        # 3. Update Assets Table
+        logger.info("Updating Assets table...")
+        
+        # Get existing assets map
+        existing_assets = {a.symbol: a for a in db.query(Asset).all()}
+        
+        for symbol, data in holdings.items():
+            qty = data["quantity"]
+            cost = data["cost"]
+            asset_type = data["type"]
+            
+            if qty > 0:
+                if symbol in existing_assets:
+                    # Update
+                    asset = existing_assets[symbol]
+                    asset.quantity = qty
+                    asset.cost = cost
+                    asset.type = asset_type
+                else:
+                    # Create
+                    new_asset = Asset(
+                        symbol=symbol,
+                        type=asset_type,
+                        quantity=qty,
+                        cost=cost,
+                        currency="TWD", # Default
+                        name=symbol # Placeholder
+                    )
+                    db.add(new_asset)
+            else:
+                # If quantity is 0, check if we need to remove it
+                # For now, let's remove it to keep table clean
+                if symbol in existing_assets:
+                    db.delete(existing_assets[symbol])
+
+        # Commit is handled by caller or here? 
+        # Usually service functions using a standard session might commit.
+        # But if part of larger transaction, maybe not.
+        # Let's commit here to ensure assets are synced.
+        db.commit()
+        logger.info("Assets table updated successfully.")
+
+    except Exception as e:
+        logger.error(f"Error updating assets: {e}")
+        db.rollback()
+        raise e

@@ -72,6 +72,54 @@ def read_cumulative_pnl(db: Session = Depends(database.get_db)):
 def create_future_transaction(transaction: schemas.TransactionCreate, db: Session = Depends(database.get_db)):
     return crud.create_future_transaction(db, transaction)
 
+
+from fastapi import UploadFile, File, Form
+import shutil
+import os
+from .importer import TwBrokerStrategy, TransactionProcessor
+from .services import update_assets_from_history
+
+@app.post("/upload/history")
+async def upload_history(
+    file: UploadFile = File(...),
+    strategy: str = Form(...),
+    db: Session = Depends(database.get_db)
+):
+    # 1. Save file temporarily
+    temp_dir = "temp_uploads"
+    os.makedirs(temp_dir, exist_ok=True)
+    file_path = os.path.join(temp_dir, file.filename)
+    
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        # 2. Select Strategy
+        # Currently only supports "cathay" which maps to TwBrokerStrategy
+        # You can extend this mapping later
+        if strategy.lower() == "cathay":
+            importer = TwBrokerStrategy()
+        else:
+            # Default or error
+            importer = TwBrokerStrategy()
+            
+        # 3. Parse and Process
+        transactions = importer.parse(file_path)
+        processor = TransactionProcessor()
+        count = processor.process_transactions(transactions, db)
+        
+        # 4. Update Assets
+        update_assets_from_history(db)
+        
+        return {"status": "success", "imported_count": count, "message": "Import successful and assets updated."}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Cleanup
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
 def record_net_worth_job():
     db = database.SessionLocal()
     try:

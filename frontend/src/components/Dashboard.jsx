@@ -4,7 +4,8 @@ import AssetTable from './AssetTable';
 import RealizedPnLTable from './RealizedPnLTable';
 import AssetAllocationChart from './AssetAllocationChart';
 import NetWorthHistoryChart from './NetWorthHistoryChart';
-import { Plus, RefreshCw, History, TrendingUp } from 'lucide-react';
+import ImportHistoryModal from './ImportHistoryModal';
+import { Plus, RefreshCw, History, TrendingUp, Upload } from 'lucide-react';
 import AddAssetModal from './AddAssetModal';
 
 const Dashboard = () => {
@@ -15,6 +16,7 @@ const Dashboard = () => {
     const [cumulativePnl, setCumulativePnl] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     // Unified View Mode: 'assets' or 'pnl'
     const [viewMode, setViewMode] = useState('assets');
@@ -210,14 +212,25 @@ const Dashboard = () => {
                         {viewMode === 'pnl' ? 'Realized P&L History' : 'Holdings'}
                     </h3>
 
-                    {viewMode === 'assets' && (
-                        <button
-                            onClick={() => setIsModalOpen(true)}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-nebula-500 to-nebula-400 hover:from-nebula-400 hover:to-nebula-300 rounded-xl font-medium text-sm shadow-lg shadow-nebula-500/25 transition-all hover:scale-105 active:scale-95"
-                        >
-                            <Plus size={18} /> New Position
-                        </button>
-                    )}
+                    <div className="flex gap-3">
+                        {viewMode === 'assets' && (
+                            <>
+                                <button
+                                    onClick={() => setIsImportModalOpen(true)}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-nebula-500/50 rounded-xl font-medium text-sm text-slate-300 hover:text-white transition-all active:scale-95 group"
+                                >
+                                    <Upload size={18} className="text-nebula-400 group-hover:text-nebula-300" />
+                                    Import CSV
+                                </button>
+                                <button
+                                    onClick={() => setIsModalOpen(true)}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-nebula-500 to-nebula-400 hover:from-nebula-400 hover:to-nebula-300 rounded-xl font-medium text-sm text-white shadow-lg shadow-nebula-500/25 transition-all hover:scale-105 active:scale-95"
+                                >
+                                    <Plus size={18} /> New Position
+                                </button>
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 {viewMode === 'pnl' ? (
@@ -239,6 +252,17 @@ const Dashboard = () => {
                     onClose={() => setIsModalOpen(false)}
                     onSuccess={() => {
                         setIsModalOpen(false);
+                        fetchData();
+                    }}
+                />
+            )}
+
+            {isImportModalOpen && (
+                <ImportHistoryModal
+                    isOpen={isImportModalOpen}
+                    onClose={() => setIsImportModalOpen(false)}
+                    onSuccess={() => {
+                        setIsImportModalOpen(false);
                         fetchData();
                     }}
                 />

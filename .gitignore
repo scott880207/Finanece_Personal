@@ -50,3 +50,9 @@ finance.db
 # Project Specific
 mydata/
 .agent/
+
+# Backups
+*_backup.db
+*.log
+csv_for_import/
+temp_uploads/
