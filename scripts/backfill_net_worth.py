@@ -107,15 +107,34 @@ def backfill_net_worth():
         
         current_flat_usd_rate = get_usd_to_twd_rate()
 
+        # Calculate historical net cash flow to determine Initial Cash
+        assets_meta = {a.symbol: a for a in session.query(Asset).all()}
+        
+        total_cash_flow_twd = 0.0
+        total_cash_flow_usd = 0.0
+        for t in txns:
+            flow = t.quantity * t.price
+            if t.action in ["BUY", "BUY_OPEN", "BUY_DT"]:
+                flow_amount = -flow - t.fee
+            else:
+                flow_amount = flow - t.fee - t.tax
+                
+            if t.asset_type in ["TW_STOCK", "TW_FUTURE"]:
+                total_cash_flow_twd += flow_amount
+            elif t.asset_type == "US_STOCK":
+                total_cash_flow_usd += flow_amount
+
+        current_cash_twd = sum(a.quantity for a in assets_meta.values() if a.type == "TWD")
+        current_cash_usd = sum(a.quantity for a in assets_meta.values() if a.type == "USD")
+
+        running_twd = current_cash_twd - total_cash_flow_twd
+        running_usd = current_cash_usd - total_cash_flow_usd
+
         # Replay transactions day by day
         # tracking inventory, average cost for realized PnL/equity logic
         
         # state: symbol -> {qty: float, cost: float, type: str, leverage: float, contract_size: float}
         inventory = {}
-        
-        # Let's pull asset definitions for leverage/contract_size mappings 
-        # (Assuming the current Assets table holds the static metadata we need)
-        assets_meta = {a.symbol: a for a in session.query(Asset).all()}
         
         # Empty old net_worth_history
         session.query(NetWorthHistory).delete()
@@ -142,6 +161,18 @@ def backfill_net_worth():
                 inv = inventory[sym]
                 action = t.action.upper()
                 
+                # Update running cash dynamically
+                flow = t.quantity * t.price
+                if action in ["BUY", "BUY_OPEN", "BUY_DT"]:
+                    flow_amount = -flow - t.fee
+                else:
+                    flow_amount = flow - t.fee - t.tax
+                    
+                if t.asset_type in ["TW_STOCK", "TW_FUTURE"]:
+                    running_twd += flow_amount
+                elif t.asset_type == "US_STOCK":
+                    running_usd += flow_amount
+                
                 if action in ["BUY", "BUY_OPEN"]:
                     total_cost = (inv["qty"] * inv["cost"]) + (t.quantity * t.price)
                     inv["qty"] += t.quantity
@@ -152,13 +183,7 @@ def backfill_net_worth():
                         inv["qty"] = 0.0
                         inv["cost"] = 0.0
                         
-                # Handle Day Trades simply by ignoring inventory changes if they sum to 0
-                # But since they are mapped as BUY_DT / SELL_DT:
-                elif action == "BUY_DT":
-                    # For net worth purposes, a day trade closes in the same day, 
-                    # so at the end of the day, inventory is unchanged.
-                    pass
-                elif action == "SELL_DT":
+                elif action in ["BUY_DT", "SELL_DT"]:
                     pass
                     
                 txn_idx += 1
@@ -172,8 +197,8 @@ def backfill_net_worth():
             # If weekend/holiday, forward-fill from last available
             # We'll do a simple fallback: find the closest past date
             def get_rate_on_date(rates_series, target_date, default_val):
-                # Look backwards up to 7 days
-                for i in range(7):
+                # Look backwards up to 30 days to mitigate missing API data
+                for i in range(30):
                     d = target_date - timedelta(days=i)
                     if d in rates_series and not pd.isna(rates_series[d]):
                         return rates_series[d]
@@ -193,19 +218,14 @@ def backfill_net_worth():
                 # We will fetch current static cash from Assets table
                 pass
 
-            # Inject Static Cash from current DB Assets
-            # Because the transaction system doesn't log standard cash deposits/withdrawals perfectly.
-            for a in assets_meta.values():
-                if a.type in ["TWD", "USD"]:
-                    # Assume cash has been constant
-                    if a.type == "TWD":
-                        details.append({"symbol": a.symbol, "type": "TWD", "quantity": a.quantity, "value_twd": a.quantity})
-                        total_twd += a.quantity
-                    elif a.type == "USD":
-                        val_twd = a.quantity * usd_rate
-                        details.append({"symbol": a.symbol, "type": "USD", "quantity": a.quantity, "value_twd": val_twd})
-                        total_twd += val_twd
-                        total_usd += a.quantity
+            # Inject Dynamic Cash tracked via transactions
+            details.append({"symbol": "TWD", "type": "TWD", "quantity": running_twd, "value_twd": running_twd})
+            total_twd += running_twd
+
+            val_usd_in_twd = running_usd * usd_rate
+            details.append({"symbol": "USD", "type": "USD", "quantity": running_usd, "value_twd": val_usd_in_twd})
+            total_twd += val_usd_in_twd
+            total_usd += running_usd
 
             # Sum up securities
             for sym, inv in inventory.items():
