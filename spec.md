@@ -43,24 +43,53 @@
 
 ## 4. 資料庫設計 (Schema)
 
-### 4.1 Asset (資產)
-- `id`: Integer, Primary Key
-- `name`: String
-- `category`: String
-- ... (參照 `backend/models.py`)
+本系統使用 SQLite，資料庫定義主要包含以下資料表：
 
-### 4.2 NetWorthHistory (淨值歷史)
-- `id`: Integer, Primary Key
-- `date`: Date
-- `total_twd`: Float
-- `total_usd`: Float
-- `details`: JSON (各資產明細)
+### 4.1 資產表 (`assets`)
+記錄使用者當前持有的各項資產明細。
+- `id` (Integer): 主鍵
+- `type` (String): 資產類型 (例如: TWD, USD, TW_STOCK, US_STOCK 等)
+- `symbol` (String): 資產代碼 (例如: 2330.TW, AAPL)
+- `quantity` (Float): 持有數量
+- `cost` (Float): 單位平均成本
+- `currency` (String): 計價幣別 (預設 TWD)
+- `leverage` (Float): 槓桿倍數 (預設 1.0)
+- `contract_size` (Float): 合約規格 (預設 1.0)
+- `margin` (Float): 保證金 (預設 0.0)
+- `name` (String): 資產名稱
+- `contract_month` (String): 合約月份 (適用於期貨，格式 YYYYMM)
 
-### 4.3 RealizedPnL (已實現損益)
-- `id`: Integer, Primary Key
-- `date`: Date
-- `amount`: Float
-- ...
+### 4.2 淨值歷史表 (`net_worth_history`)
+記錄每日總淨值及資產快照。
+- `id` (Integer): 主鍵
+- `date` (Date): 記錄日期 (唯一)
+- `total_twd` (Float): 台幣總淨值
+- `total_usd` (Float): 美金總淨值
+- `details` (JSON): 該日資產明細快照
+
+### 4.3 已實現損益表 (`realized_pnl`)
+記錄資產賣出或平倉後產生的損益。
+- `id` (Integer): 主鍵
+- `date` (Date): 實現日期
+- `symbol` (String): 資產代碼
+- `quantity` (Float): 交易數量
+- `pnl` (Float): 損益金額
+- `notes` (String): 備註說明
+
+### 4.4 交易紀錄表 (`transactions`)
+記錄每一筆買賣交易明細。
+- `id` (Integer): 主鍵
+- `date` (Date): 交易日期
+- `asset_type` (String): 資產類型
+- `symbol` (String): 資產代碼
+- `action` (String): 交易動作 (BUY_OPEN, SELL_OPEN, SELL_CLOSE, BUY_CLOSE)
+- `price` (Float): 成交價格
+- `quantity` (Float): 成交數量
+- `contract_month` (String): 合約月份
+- `multiplier` (Float): 乘數 (預設 1.0)
+- `fee` (Float): 手續費 (預設 0.0)
+- `tax` (Float): 交易稅 (預設 0.0)
+- `assigned_margin` (Float): 指派保證金 (預設 0.0)
 
 ## 5. API 介面
 
