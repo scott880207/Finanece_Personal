@@ -50,10 +50,10 @@ class TwBrokerStrategy(BaseImporter):
                 action = "BUY"
             elif raw_action == "現股賣出":
                 action = "SELL"
-            elif raw_action == "融券買進": # Short cover
-                action = "BUY_CLOSE"
-            elif raw_action == "融券賣出": # Short sell
-                action = "SELL_OPEN"
+            elif raw_action == "現沖買進" or raw_action == "融資買進":
+                action = "BUY_DT" if "沖" in raw_action else "BUY"
+            elif raw_action == "現股沖賣" or raw_action == "融券賣出":
+                action = "SELL_DT" if "沖" in raw_action else "SELL_OPEN"
                 
             # Parse Symbol
             raw_symbol = get_val('股票名稱')
