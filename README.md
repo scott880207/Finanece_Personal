@@ -50,11 +50,18 @@ npm run dev
 
 ## 資料導入 (可選)
 
-若有初始資料位於 `mydata/` 目錄，可執行以下腳本導入：
+若有初始資料位於 `mydata/` 目錄，可執行台股腳本導入：
 
 ```bash
 python import_data.py
 ```
+
+針對美股 (US Broker) 下載的 CSV 交易明細清單，可執行專屬擴充腳本 (含 FIFO 損益結算)：
+
+```bash
+python import_us.py
+```
+
 
 ## 資料庫結構 (Database Schema)
 
