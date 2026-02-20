@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import date
 
@@ -13,6 +13,13 @@ class AssetBase(BaseModel):
     margin: Optional[float] = 0.0
     name: Optional[str] = None
     contract_month: Optional[str] = None
+
+    @field_validator('symbol', 'name', mode='before')
+    @classmethod
+    def cast_to_string(cls, v):
+        if v is not None:
+            return str(v)
+        return v
 
 class AssetCreate(AssetBase):
     pass
