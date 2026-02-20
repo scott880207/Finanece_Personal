@@ -87,8 +87,10 @@ def run_import():
                     )
                     session.add(rpl)
 
+        from backend.services import update_assets_from_history
+        update_assets_from_history(session)
         session.commit()
-        print("Realized PnL calculated and updated successfully.")
+        print("Realized PnL calculated and Assets updated successfully.")
         
     except Exception as e:
         session.rollback()

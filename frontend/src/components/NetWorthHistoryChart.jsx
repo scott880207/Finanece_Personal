@@ -3,7 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 const NetWorthHistoryChart = ({ data, dataKey = "total_twd", color = "#3b82f6", viewMode = 'total' }) => {
     // Process data to calculate breakdown if needed
-    const processedData = data.map(entry => {
+    const processedData = (data || []).map(entry => {
         if (viewMode === 'breakdown' && entry.details) {
             let cash = 0;
             let twStock = 0;

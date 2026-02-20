@@ -70,7 +70,7 @@ const AssetTable = ({ assets, onDelete, onUpdate, usdRate, totalNetWorth }) => {
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                    {[...assets].sort((a, b) => {
+                    {[...(assets || [])].sort((a, b) => {
                         const priority = {
                             'TW_STOCK': 1,
                             'US_STOCK': 2,

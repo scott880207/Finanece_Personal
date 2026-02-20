@@ -14,7 +14,7 @@ const RealizedPnLTable = ({ data }) => {
                     </tr>
                 </thead>
                 <tbody>
-                    {data.map((item) => (
+                    {(data || []).map((item) => (
                         <tr key={item.id} className="border-b border-slate-800 hover:bg-slate-800/30 transition-colors">
                             <td className="p-4 text-slate-300">{item.date}</td>
                             <td className="p-4 font-medium text-slate-200">{item.symbol}</td>
@@ -25,7 +25,7 @@ const RealizedPnLTable = ({ data }) => {
                             <td className="p-4 text-slate-400 text-sm">{item.notes}</td>
                         </tr>
                     ))}
-                    {data.length === 0 && (
+                    {(!data || data.length === 0) && (
                         <tr>
                             <td colSpan="5" className="p-8 text-center text-slate-500">
                                 No realized P&L history found.

@@ -77,6 +77,7 @@ from fastapi import UploadFile, File, Form
 import shutil
 import os
 from .importer import TwBrokerStrategy, TransactionProcessor
+from .importer.us_strategies import UsBrokerStrategy
 from .services import update_assets_from_history
 
 @app.post("/upload/history")
@@ -95,12 +96,13 @@ async def upload_history(
             shutil.copyfileobj(file.file, buffer)
             
         # 2. Select Strategy
-        # Currently only supports "cathay" which maps to TwBrokerStrategy
-        # You can extend this mapping later
+        # Supports "cathay" (TW) and "us_broker" (US)
         if strategy.lower() == "cathay":
             importer = TwBrokerStrategy()
+        elif strategy.lower() == "us_broker":
+            importer = UsBrokerStrategy()
         else:
-            # Default or error
+            # Default to TW if unknown, but better to support both forms
             importer = TwBrokerStrategy()
             
         # 3. Parse and Process

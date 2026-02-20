@@ -12,7 +12,7 @@ const COLORS = [
 
 const AssetAllocationChart = ({ data, dataKey = 'notional_value', totalNetWorth, groupingMode = 'type' }) => {
     // Group by type or symbol for better visualization
-    const groupedData = data.reduce((acc, item) => {
+    const groupedData = (data || []).reduce((acc, item) => {
         let key;
         if (groupingMode === 'asset') {
             key = item.symbol || item.name || item.type;
@@ -55,7 +55,7 @@ const AssetAllocationChart = ({ data, dataKey = 'notional_value', totalNetWorth,
                     contentStyle={{ backgroundColor: 'rgba(21, 25, 37, 0.9)', backdropFilter: 'blur(8px)', borderColor: 'rgba(255, 255, 255, 0.1)', color: '#f1f5f9', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                     itemStyle={{ color: '#f1f5f9', fontFamily: 'Urbanist' }}
                     formatter={(value, name, props) => {
-                        const percent = props.payload.payload.percent || (totalNetWorth ? value / totalNetWorth : 0);
+                        const percent = props?.payload?.payload?.percent || props?.payload?.percent || (totalNetWorth ? value / totalNetWorth : 0);
                         return [
                             `${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'TWD', maximumFractionDigits: 0 }).format(value)} (${(percent * 100).toFixed(1)}%)`,
                             name

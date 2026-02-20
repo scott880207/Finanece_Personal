@@ -64,6 +64,15 @@ class TwBrokerStrategy(BaseImporter):
             # Handle potential numeric values or numpy types
             raw_symbol_str = str(raw_symbol).strip()
 
+            # Ensure we don't accidentally drop leading zeros if it was parsed as float/int
+            # E.g. 9816.0 -> "009816"
+            if raw_symbol_str.endswith('.0'):
+                raw_symbol_str = raw_symbol_str[:-2]
+                
+            # If it's pure digits and less than 6 characters, it might be missing leading zeros (Common for TW stocks starting with 00)
+            if raw_symbol_str.isdigit() and len(raw_symbol_str) < 6:
+                raw_symbol_str = raw_symbol_str.zfill(6)
+
             # Extract content inside parentheses or match alphanumeric code
             # e.g., "元大美債20正2(00680L)" -> "00680L"
             symbol_match = re.search(r'\((.*?)\)', raw_symbol_str)
@@ -83,7 +92,7 @@ class TwBrokerStrategy(BaseImporter):
 
             dto = TransactionDTO(
                 date=txn_date,
-                asset_type="Stock", # Hardcoded as per requirements
+                asset_type="TW_STOCK", # Fixed to use accurate standard value
                 symbol=symbol,
                 action=action,
                 price=price,

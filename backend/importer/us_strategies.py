@@ -79,7 +79,7 @@ class UsBrokerStrategy(BaseImporter):
                 continue
 
             # Parse Action
-            raw_action = get_val('交易種類')
+            raw_action = str(get_val('交易種類')).strip()
             action = "UNKNOWN"
             if raw_action == "買進":
                 action = "BUY"

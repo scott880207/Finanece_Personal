@@ -295,10 +295,10 @@ def update_assets_from_history(db: Session):
 
         # 2. Calculate holdings
         # structure: symbol -> {quantity: float, cost: float, type: str}
-        holdings: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"quantity": 0.0, "cost": 0.0, "type": "Stock"})
+        holdings: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"quantity": 0.0, "cost": 0.0, "type": "TW_STOCK"})
 
         for txn in transactions:
-            symbol = txn.symbol
+            symbol = str(txn.symbol) # Ensure symbol is string
             action = txn.action.upper()
             price = txn.price
             qty = txn.quantity
