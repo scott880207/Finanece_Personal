@@ -57,17 +57,21 @@ class TwBrokerStrategy(BaseImporter):
                 
             # Parse Symbol
             raw_symbol = get_val('股票名稱')
+            # Ensure safe string conversion
+            if raw_symbol is None:
+                continue
+            
+            # Handle potential numeric values or numpy types
+            raw_symbol_str = str(raw_symbol).strip()
+
             # Extract content inside parentheses or match alphanumeric code
             # e.g., "元大美債20正2(00680L)" -> "00680L"
-            symbol_match = re.search(r'\((.*?)\)', raw_symbol)
+            symbol_match = re.search(r'\((.*?)\)', raw_symbol_str)
             if symbol_match:
                 symbol = symbol_match.group(1)
             else:
-                # If no parenthesis, try to find the code directly? 
-                # Or maybe the column IS the code. 
-                # Let's assume the prompt example: "元大美債20正2(00680L)"
-                symbol = raw_symbol
-
+                symbol = raw_symbol_str
+            
             # Parse Numeric Fields
             try: 
                 quantity = float(str(get_val('股數')).replace(',', ''))
