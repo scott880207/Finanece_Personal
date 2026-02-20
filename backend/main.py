@@ -53,7 +53,7 @@ def get_current_net_worth(db: Session = Depends(database.get_db)):
     return services.calculate_net_worth(assets)
 
 @app.get("/net-worth/history", response_model=List[schemas.NetWorthHistory])
-def read_net_worth_history(skip: int = 0, limit: int = 30, db: Session = Depends(database.get_db)):
+def read_net_worth_history(skip: int = 0, limit: int = 1000, db: Session = Depends(database.get_db)):
     return crud.get_net_worth_history(db, skip=skip, limit=limit)
 
 @app.get("/pnl/history", response_model=List[schemas.RealizedPnL])
