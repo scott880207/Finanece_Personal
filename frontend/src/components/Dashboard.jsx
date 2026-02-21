@@ -7,6 +7,7 @@ import NetWorthHistoryChart from './NetWorthHistoryChart';
 import ImportHistoryModal from './ImportHistoryModal';
 import { Plus, RefreshCw, History, TrendingUp, Upload } from 'lucide-react';
 import AddAssetModal from './AddAssetModal';
+import { filterDataByTimeRange } from '../utils/dateFilter';
 
 const Dashboard = () => {
     const [assets, setAssets] = useState([]);
@@ -26,6 +27,8 @@ const Dashboard = () => {
     const [groupingMode, setGroupingMode] = useState('type');
     // History View Mode: 'total' or 'breakdown'
     const [historyViewMode, setHistoryViewMode] = useState('total');
+    // Time Range Filter: '3M', '1Y', 'ALL'
+    const [timeRange, setTimeRange] = useState('ALL');
 
     const fetchData = async () => {
         setLoading(true);
@@ -52,6 +55,9 @@ const Dashboard = () => {
     useEffect(() => {
         fetchData();
     }, []);
+
+    const filteredHistory = filterDataByTimeRange(history, timeRange);
+    const filteredCumulativePnl = filterDataByTimeRange(cumulativePnl, timeRange);
 
     return (
         <div className="space-y-8">
@@ -173,29 +179,51 @@ const Dashboard = () => {
                         <h3 className="text-lg font-bold font-display text-white">
                             {viewMode === 'pnl' ? 'Cumulative Realized P&L' : 'History'}
                         </h3>
-                        {viewMode !== 'pnl' && (
+                        <div className="flex gap-3">
                             <div className="flex bg-slate-900/50 rounded-lg p-0.5 border border-white/10">
                                 <button
-                                    onClick={() => setHistoryViewMode('total')}
-                                    className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-colors ${historyViewMode === 'total' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                    onClick={() => setTimeRange('3M')}
+                                    className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-colors ${timeRange === '3M' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}
                                 >
-                                    Total
+                                    3M
                                 </button>
                                 <button
-                                    onClick={() => setHistoryViewMode('breakdown')}
-                                    className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-colors ${historyViewMode === 'breakdown' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                    onClick={() => setTimeRange('1Y')}
+                                    className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-colors ${timeRange === '1Y' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}
                                 >
-                                    Breakdown
+                                    1Y
+                                </button>
+                                <button
+                                    onClick={() => setTimeRange('ALL')}
+                                    className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-colors ${timeRange === 'ALL' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                >
+                                    ALL
                                 </button>
                             </div>
-                        )}
+                            {viewMode !== 'pnl' && (
+                                <div className="flex bg-slate-900/50 rounded-lg p-0.5 border border-white/10">
+                                    <button
+                                        onClick={() => setHistoryViewMode('total')}
+                                        className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-colors ${historyViewMode === 'total' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        Total
+                                    </button>
+                                    <button
+                                        onClick={() => setHistoryViewMode('breakdown')}
+                                        className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-colors ${historyViewMode === 'breakdown' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        Breakdown
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <div className="h-72">
                         {viewMode === 'pnl' ? (
-                            <NetWorthHistoryChart data={cumulativePnl} dataKey="cumulative_pnl" color="#0aff68" />
+                            <NetWorthHistoryChart data={filteredCumulativePnl} dataKey="cumulative_pnl" color="#0aff68" />
                         ) : (
                             <NetWorthHistoryChart
-                                data={history}
+                                data={filteredHistory}
                                 dataKey="total_twd"
                                 color="#6366f1"
                                 viewMode={historyViewMode}
