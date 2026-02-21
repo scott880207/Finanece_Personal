@@ -28,7 +28,7 @@ const Dashboard = () => {
     // History View Mode: 'total' or 'breakdown'
     const [historyViewMode, setHistoryViewMode] = useState('total');
     // Time Range Filter: '3M', '1Y', 'ALL'
-    const [timeRange, setTimeRange] = useState('ALL');
+    const [timeRange, setTimeRange] = useState('3M');
 
     const fetchData = async () => {
         setLoading(true);
